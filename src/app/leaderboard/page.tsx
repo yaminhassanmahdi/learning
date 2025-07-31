@@ -93,7 +93,6 @@ export default function WeeklyLeaderboard() {
 
     fetchAvailableWeeks();
     // This effect runs only once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Effect 2: Fetch leaderboard data when the selected week changes

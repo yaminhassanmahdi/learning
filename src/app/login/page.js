@@ -48,13 +48,10 @@ const Auth = () => {
         }
     }, [user, router]);
 
-    // eslint-disable-next-line no-unused-vars
     const [uid, setUID] = useAtom(user_id_supabase);
-    // eslint-disable-next-line no-unused-vars
     const [userEmail_s, setUserEmail_s] = useAtom(userEmail_state);
 
     // Your state reset logic atoms (keeping them as they are)
-    // eslint-disable-next-line no-unused-vars
     const [file, setFile] = useAtom(fileAtom);
     const [fileURLSupabase, setFileURLSupabase] = useAtom(file_url_supabase);
     const [quizQues, setQuizQuestions] = useAtom(quizQuestions);

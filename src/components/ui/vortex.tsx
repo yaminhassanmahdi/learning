@@ -234,7 +234,7 @@ export const Vortex = (props: VortexProps) => {
         resize(canvas, ctx);
       }
     });
-  }, [setup, resize]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [setup, resize]);
 
   return (
     <div className={cn("relative h-full w-full", props.containerClassName)}>
