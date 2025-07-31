@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import React, { useEffect, useRef, useCallback } from "react";
+import React, { useEffect, useRef, useCallback, useMemo } from "react";
 import { createNoise3D } from "simplex-noise";
 import { motion } from "motion/react";
 
@@ -40,7 +40,7 @@ export const Vortex = (props: VortexProps) => {
   let tick = 0;
   const noise3D = createNoise3D();
   let particleProps = new Float32Array(particlePropsLength);
-  let center: [number, number] = [0, 0];
+  const center = useMemo(() => [0, 0] as [number, number], []);
 
   const HALF_PI: number = 0.5 * Math.PI;
   const TAU: number = 2 * Math.PI;
@@ -53,6 +53,44 @@ export const Vortex = (props: VortexProps) => {
   };
   const lerp = (n1: number, n2: number, speed: number): number =>
     (1 - speed) * n1 + speed * n2;
+
+  const resize = useCallback((
+    canvas: HTMLCanvasElement,
+    ctx?: CanvasRenderingContext2D
+  ) => {
+    const { innerWidth, innerHeight } = window;
+
+    canvas.width = innerWidth;
+    canvas.height = innerHeight;
+
+    center[0] = 0.5 * canvas.width;
+    center[1] = 0.5 * canvas.height;
+  }, [center]);
+
+  const initParticles = useCallback(() => {
+    tick = 0;
+    // simplex = new SimplexNoise();
+    particleProps = new Float32Array(particlePropsLength);
+
+    for (let i = 0; i < particlePropsLength; i += particlePropCount) {
+      initParticle(i);
+    }
+  }, []);
+
+  const draw = useCallback((canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
+    tick++;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    drawParticles(ctx);
+    renderGlow(canvas, ctx);
+    renderToScreen(canvas, ctx);
+
+    window.requestAnimationFrame(() => draw(canvas, ctx));
+  }, [backgroundColor]);
 
   const setup = useCallback(() => {
     const canvas = canvasRef.current;
@@ -67,16 +105,6 @@ export const Vortex = (props: VortexProps) => {
       }
     }
   }, [resize, draw, initParticles]);
-
-  const initParticles = () => {
-    tick = 0;
-    // simplex = new SimplexNoise();
-    particleProps = new Float32Array(particlePropsLength);
-
-    for (let i = 0; i < particlePropsLength; i += particlePropCount) {
-      initParticle(i);
-    }
-  };
 
   const initParticle = (i: number) => {
     const canvas = canvasRef.current;
@@ -184,19 +212,6 @@ export const Vortex = (props: VortexProps) => {
   const checkBounds = (x: number, y: number, canvas: HTMLCanvasElement) => {
     return x > canvas.width || x < 0 || y > canvas.height || y < 0;
   };
-
-  const resize = useCallback((
-    canvas: HTMLCanvasElement,
-    ctx?: CanvasRenderingContext2D
-  ) => {
-    const { innerWidth, innerHeight } = window;
-
-    canvas.width = innerWidth;
-    canvas.height = innerHeight;
-
-    center[0] = 0.5 * canvas.width;
-    center[1] = 0.5 * canvas.height;
-  }, [center]);
 
   const renderGlow = (
     canvas: HTMLCanvasElement,
