@@ -77,6 +77,46 @@ export const Vortex = (props: VortexProps) => {
     }
   }, [particlePropsLength, particlePropCount]);
 
+  const updateParticle = useCallback((i: number, ctx: CanvasRenderingContext2D) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    let i2 = 1 + i,
+      i3 = 2 + i,
+      i4 = 3 + i,
+      i5 = 4 + i,
+      i6 = 5 + i,
+      i7 = 6 + i,
+      i8 = 7 + i,
+      i9 = 8 + i;
+    let n, x, y, vx, vy, life, ttl, speed, x2, y2, radius, hue;
+
+    x = particlePropsRef.current[i];
+    y = particlePropsRef.current[i2];
+    n = noise3D(x * xOff, y * yOff, tickRef.current * zOff) * noiseSteps * TAU;
+    vx = lerp(particlePropsRef.current[i3], Math.cos(n), 0.5);
+    vy = lerp(particlePropsRef.current[i4], Math.sin(n), 0.5);
+    life = particlePropsRef.current[i5];
+    ttl = particlePropsRef.current[i6];
+    speed = particlePropsRef.current[i7];
+    x2 = x + vx * speed;
+    y2 = y + vy * speed;
+    radius = particlePropsRef.current[i8];
+    hue = particlePropsRef.current[i9];
+
+    drawParticle(x, y, x2, y2, life, ttl, radius, hue, ctx);
+
+    life++;
+
+    particlePropsRef.current[i] = x2;
+    particlePropsRef.current[i2] = y2;
+    particlePropsRef.current[i3] = vx;
+    particlePropsRef.current[i4] = vy;
+    particlePropsRef.current[i5] = life;
+
+    (checkBounds(x, y, canvas) || life > ttl) && initParticle(i);
+  }, [noise3D, xOff, yOff, zOff, noiseSteps, TAU, lerp, drawParticle, checkBounds, initParticle]);
+
   const draw = useCallback((canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
     tickRef.current++;
 
@@ -142,52 +182,8 @@ export const Vortex = (props: VortexProps) => {
     radius = baseRadius + rand(rangeRadius);
     hue = baseHue + rand(rangeHue);
 
-    particleProps.set([x, y, vx, vy, life, ttl, speed, radius, hue], i);
+    particlePropsRef.current.set([x, y, vx, vy, life, ttl, speed, radius, hue], i);
   };
-
-
-
-
-
-  const updateParticle = useCallback((i: number, ctx: CanvasRenderingContext2D) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    let i2 = 1 + i,
-      i3 = 2 + i,
-      i4 = 3 + i,
-      i5 = 4 + i,
-      i6 = 5 + i,
-      i7 = 6 + i,
-      i8 = 7 + i,
-      i9 = 8 + i;
-    let n, x, y, vx, vy, life, ttl, speed, x2, y2, radius, hue;
-
-    x = particlePropsRef.current[i];
-    y = particlePropsRef.current[i2];
-    n = noise3D(x * xOff, y * yOff, tickRef.current * zOff) * noiseSteps * TAU;
-    vx = lerp(particlePropsRef.current[i3], Math.cos(n), 0.5);
-    vy = lerp(particlePropsRef.current[i4], Math.sin(n), 0.5);
-    life = particlePropsRef.current[i5];
-    ttl = particlePropsRef.current[i6];
-    speed = particlePropsRef.current[i7];
-    x2 = x + vx * speed;
-    y2 = y + vy * speed;
-    radius = particlePropsRef.current[i8];
-    hue = particlePropsRef.current[i9];
-
-    drawParticle(x, y, x2, y2, life, ttl, radius, hue, ctx);
-
-    life++;
-
-    particlePropsRef.current[i] = x2;
-    particlePropsRef.current[i2] = y2;
-    particlePropsRef.current[i3] = vx;
-    particlePropsRef.current[i4] = vy;
-    particlePropsRef.current[i5] = life;
-
-    (checkBounds(x, y, canvas) || life > ttl) && initParticle(i);
-  }, [noise3D, xOff, yOff, zOff, noiseSteps, TAU, lerp, drawParticle, checkBounds, initParticle]);
 
   const drawParticle = useCallback((
     x: number,
