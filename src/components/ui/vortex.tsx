@@ -90,7 +90,7 @@ export const Vortex = (props: VortexProps) => {
     renderToScreen(canvas, ctx);
 
     window.requestAnimationFrame(() => draw(canvas, ctx));
-  }, [backgroundColor]);
+  }, [backgroundColor, drawParticles, renderGlow, renderToScreen]);
 
   const setup = useCallback(() => {
     const canvas = canvasRef.current;
@@ -125,26 +125,13 @@ export const Vortex = (props: VortexProps) => {
     particleProps.set([x, y, vx, vy, life, ttl, speed, radius, hue], i);
   };
 
-  const draw = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
-    tick++;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = backgroundColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    drawParticles(ctx);
-    renderGlow(canvas, ctx);
-    renderToScreen(canvas, ctx);
-
-    window.requestAnimationFrame(() => draw(canvas, ctx));
-  };
-
-  const drawParticles = (ctx: CanvasRenderingContext2D) => {
+  const drawParticles = useCallback((ctx: CanvasRenderingContext2D) => {
     for (let i = 0; i < particlePropsLength; i += particlePropCount) {
       updateParticle(i, ctx);
     }
-  };
+  }, [particlePropsLength, particlePropCount]);
 
   const updateParticle = (i: number, ctx: CanvasRenderingContext2D) => {
     const canvas = canvasRef.current;
@@ -213,7 +200,7 @@ export const Vortex = (props: VortexProps) => {
     return x > canvas.width || x < 0 || y > canvas.height || y < 0;
   };
 
-  const renderGlow = (
+  const renderGlow = useCallback((
     canvas: HTMLCanvasElement,
     ctx: CanvasRenderingContext2D
   ) => {
@@ -228,9 +215,9 @@ export const Vortex = (props: VortexProps) => {
     ctx.globalCompositeOperation = "lighter";
     ctx.drawImage(canvas, 0, 0);
     ctx.restore();
-  };
+  }, []);
 
-  const renderToScreen = (
+  const renderToScreen = useCallback((
     canvas: HTMLCanvasElement,
     ctx: CanvasRenderingContext2D
   ) => {
@@ -238,7 +225,7 @@ export const Vortex = (props: VortexProps) => {
     ctx.globalCompositeOperation = "lighter";
     ctx.drawImage(canvas, 0, 0);
     ctx.restore();
-  };
+  }, []);
 
   useEffect(() => {
     setup();
