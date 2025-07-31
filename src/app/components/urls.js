@@ -1,0 +1,2 @@
+export const NOVITA_BASE_URL = "https://cors-for-techi.onrender.com/https://generativelanguage.googleapis.com/v1beta/openai/";
+// export const NOVITA_BASE_URL = "http://localhost:8080/https://api.novita.ai/v3/openai";
