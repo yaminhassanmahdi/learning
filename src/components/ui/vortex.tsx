@@ -45,8 +45,9 @@ export const Vortex = (props: VortexProps) => {
   const HALF_PI: number = 0.5 * Math.PI;
   const TAU: number = 2 * Math.PI;
   const TO_RAD: number = Math.PI / 180;
-  const rand = (n: number): number => n * Math.random();
-  const randRange = (n: number): number => n - rand(2 * n);
+const rand = (n: number): number => n * Math.random();
+const randRange = (n: number): number => n - rand(2 * n);
+
   const fadeInOut = useCallback((t: number, m: number): number => {
     let hm = 0.5 * m;
     return Math.abs(((t + hm) % m) - hm) / hm;
@@ -76,7 +77,7 @@ export const Vortex = (props: VortexProps) => {
     for (let i = 0; i < particlePropsLength; i += particlePropCount) {
       initParticle(i);
     }
-  }, [particlePropsLength, particlePropCount]);
+  }, [particlePropsLength, particlePropCount, initParticle]);
 
   const drawParticle = useCallback((
     x: number,
@@ -143,7 +144,7 @@ export const Vortex = (props: VortexProps) => {
     particlePropsRef.current[i5] = life;
 
     (checkBounds(x, y, canvas) || life > ttl) && initParticle(i);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [noise3D, xOff, yOff, zOff, noiseSteps, TAU, lerp, drawParticle, checkBounds, initParticle]);
 
   const draw = useCallback((canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
     tickRef.current++;
@@ -211,7 +212,7 @@ export const Vortex = (props: VortexProps) => {
     hue = baseHue + rand(rangeHue);
 
     particlePropsRef.current.set([x, y, vx, vy, life, ttl, speed, radius, hue], i);
-  }, [center, baseTTL, rangeTTL, baseSpeed, rangeSpeed, baseRadius, rangeRadius, baseHue, rangeHue]);
+  }, [center, rangeY, baseTTL, rangeTTL, baseSpeed, rangeSpeed, baseRadius, rangeRadius, baseHue, rangeHue]);
 
 
 
