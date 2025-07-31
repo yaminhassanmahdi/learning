@@ -37,9 +37,9 @@ export const Vortex = (props: VortexProps) => {
   const yOff = 0.00125;
   const zOff = 0.0005;
   const backgroundColor = props.backgroundColor || "#000000";
-  let tick = 0;
+  const tickRef = useRef(0);
   const noise3D = createNoise3D();
-  let particleProps = new Float32Array(particlePropsLength);
+  const particlePropsRef = useRef(new Float32Array(particlePropsLength));
   const center = useMemo(() => [0, 0] as [number, number], []);
 
   const HALF_PI: number = 0.5 * Math.PI;
@@ -68,17 +68,17 @@ export const Vortex = (props: VortexProps) => {
   }, [center]);
 
   const initParticles = useCallback(() => {
-    tick = 0;
+    tickRef.current = 0;
     // simplex = new SimplexNoise();
-    particleProps = new Float32Array(particlePropsLength);
+    particlePropsRef.current = new Float32Array(particlePropsLength);
 
     for (let i = 0; i < particlePropsLength; i += particlePropCount) {
       initParticle(i);
     }
-  }, []);
+  }, [particlePropsLength, particlePropCount]);
 
   const draw = useCallback((canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
-    tick++;
+    tickRef.current++;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -110,7 +110,7 @@ export const Vortex = (props: VortexProps) => {
     ctx.restore();
 
     window.requestAnimationFrame(() => draw(canvas, ctx));
-  }, [backgroundColor, particlePropsLength, particlePropCount]);
+  }, [backgroundColor, particlePropsLength, particlePropCount, updateParticle]);
 
   const setup = useCallback(() => {
     const canvas = canvasRef.current;
@@ -149,7 +149,7 @@ export const Vortex = (props: VortexProps) => {
 
 
 
-  const updateParticle = (i: number, ctx: CanvasRenderingContext2D) => {
+  const updateParticle = useCallback((i: number, ctx: CanvasRenderingContext2D) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -163,33 +163,33 @@ export const Vortex = (props: VortexProps) => {
       i9 = 8 + i;
     let n, x, y, vx, vy, life, ttl, speed, x2, y2, radius, hue;
 
-    x = particleProps[i];
-    y = particleProps[i2];
-    n = noise3D(x * xOff, y * yOff, tick * zOff) * noiseSteps * TAU;
-    vx = lerp(particleProps[i3], Math.cos(n), 0.5);
-    vy = lerp(particleProps[i4], Math.sin(n), 0.5);
-    life = particleProps[i5];
-    ttl = particleProps[i6];
-    speed = particleProps[i7];
+    x = particlePropsRef.current[i];
+    y = particlePropsRef.current[i2];
+    n = noise3D(x * xOff, y * yOff, tickRef.current * zOff) * noiseSteps * TAU;
+    vx = lerp(particlePropsRef.current[i3], Math.cos(n), 0.5);
+    vy = lerp(particlePropsRef.current[i4], Math.sin(n), 0.5);
+    life = particlePropsRef.current[i5];
+    ttl = particlePropsRef.current[i6];
+    speed = particlePropsRef.current[i7];
     x2 = x + vx * speed;
     y2 = y + vy * speed;
-    radius = particleProps[i8];
-    hue = particleProps[i9];
+    radius = particlePropsRef.current[i8];
+    hue = particlePropsRef.current[i9];
 
     drawParticle(x, y, x2, y2, life, ttl, radius, hue, ctx);
 
     life++;
 
-    particleProps[i] = x2;
-    particleProps[i2] = y2;
-    particleProps[i3] = vx;
-    particleProps[i4] = vy;
-    particleProps[i5] = life;
+    particlePropsRef.current[i] = x2;
+    particlePropsRef.current[i2] = y2;
+    particlePropsRef.current[i3] = vx;
+    particlePropsRef.current[i4] = vy;
+    particlePropsRef.current[i5] = life;
 
     (checkBounds(x, y, canvas) || life > ttl) && initParticle(i);
-  };
+  }, [noise3D, xOff, yOff, zOff, noiseSteps, TAU, lerp, drawParticle, checkBounds, initParticle]);
 
-  const drawParticle = (
+  const drawParticle = useCallback((
     x: number,
     y: number,
     x2: number,
@@ -210,11 +210,11 @@ export const Vortex = (props: VortexProps) => {
     ctx.stroke();
     ctx.closePath();
     ctx.restore();
-  };
+  }, [fadeInOut]);
 
-  const checkBounds = (x: number, y: number, canvas: HTMLCanvasElement) => {
+  const checkBounds = useCallback((x: number, y: number, canvas: HTMLCanvasElement) => {
     return x > canvas.width || x < 0 || y > canvas.height || y < 0;
-  };
+  }, []);
 
 
 

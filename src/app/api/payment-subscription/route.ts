@@ -4,8 +4,8 @@ import { NextResponse } from "next/server";
 export async function POST(request: Request) {
     try {
         // Check if Stripe is properly configured
-        if (!process.env.STRIPE_SECRET_KEY) {
-            console.error("STRIPE_SECRET_KEY environment variable is not set");
+        if (!stripe) {
+            console.error("Stripe is not configured");
             return NextResponse.json({ 
                 error: "Payment service is not configured properly." 
             }, { status: 500 });
