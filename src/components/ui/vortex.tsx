@@ -143,7 +143,7 @@ export const Vortex = (props: VortexProps) => {
     particlePropsRef.current[i5] = life;
 
     (checkBounds(x, y, canvas) || life > ttl) && initParticle(i);
-  }, [noise3D, xOff, yOff, zOff, noiseSteps, TAU, lerp, drawParticle, checkBounds, initParticle]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const draw = useCallback((canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
     tickRef.current++;
