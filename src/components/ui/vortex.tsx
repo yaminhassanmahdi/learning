@@ -85,12 +85,32 @@ export const Vortex = (props: VortexProps) => {
     ctx.fillStyle = backgroundColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    drawParticles(ctx);
-    renderGlow(canvas, ctx);
-    renderToScreen(canvas, ctx);
+    // Draw particles
+    for (let i = 0; i < particlePropsLength; i += particlePropCount) {
+      updateParticle(i, ctx);
+    }
+
+    // Render glow effects
+    ctx.save();
+    ctx.filter = "blur(8px) brightness(200%)";
+    ctx.globalCompositeOperation = "lighter";
+    ctx.drawImage(canvas, 0, 0);
+    ctx.restore();
+
+    ctx.save();
+    ctx.filter = "blur(4px) brightness(200%)";
+    ctx.globalCompositeOperation = "lighter";
+    ctx.drawImage(canvas, 0, 0);
+    ctx.restore();
+
+    // Render to screen
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.drawImage(canvas, 0, 0);
+    ctx.restore();
 
     window.requestAnimationFrame(() => draw(canvas, ctx));
-  }, [backgroundColor, drawParticles, renderGlow, renderToScreen]);
+  }, [backgroundColor, particlePropsLength, particlePropCount]);
 
   const setup = useCallback(() => {
     const canvas = canvasRef.current;
@@ -127,11 +147,7 @@ export const Vortex = (props: VortexProps) => {
 
 
 
-  const drawParticles = useCallback((ctx: CanvasRenderingContext2D) => {
-    for (let i = 0; i < particlePropsLength; i += particlePropCount) {
-      updateParticle(i, ctx);
-    }
-  }, [particlePropsLength, particlePropCount]);
+
 
   const updateParticle = (i: number, ctx: CanvasRenderingContext2D) => {
     const canvas = canvasRef.current;
@@ -200,32 +216,9 @@ export const Vortex = (props: VortexProps) => {
     return x > canvas.width || x < 0 || y > canvas.height || y < 0;
   };
 
-  const renderGlow = useCallback((
-    canvas: HTMLCanvasElement,
-    ctx: CanvasRenderingContext2D
-  ) => {
-    ctx.save();
-    ctx.filter = "blur(8px) brightness(200%)";
-    ctx.globalCompositeOperation = "lighter";
-    ctx.drawImage(canvas, 0, 0);
-    ctx.restore();
 
-    ctx.save();
-    ctx.filter = "blur(4px) brightness(200%)";
-    ctx.globalCompositeOperation = "lighter";
-    ctx.drawImage(canvas, 0, 0);
-    ctx.restore();
-  }, []);
 
-  const renderToScreen = useCallback((
-    canvas: HTMLCanvasElement,
-    ctx: CanvasRenderingContext2D
-  ) => {
-    ctx.save();
-    ctx.globalCompositeOperation = "lighter";
-    ctx.drawImage(canvas, 0, 0);
-    ctx.restore();
-  }, []);
+
 
   useEffect(() => {
     setup();
