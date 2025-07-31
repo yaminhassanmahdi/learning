@@ -95,7 +95,7 @@ export default function ExamPrepCreator() {
         }
     }, [isDarkMode]);
 
-    const loadPreps = async () => {
+    const loadPreps = useCallback(async () => {
         if (!userId) return;
 
         setIsLoading(true);
@@ -110,7 +110,7 @@ export default function ExamPrepCreator() {
             setIsLoading(false);
             setLoadingMessage('');
         }
-    };
+    }, [userId]);
 
     const processAndUploadFiles = useCallback(async files => {
         if (!genAI) {
@@ -153,7 +153,7 @@ export default function ExamPrepCreator() {
                 update('error', { error: e.message });
             }
         }
-    }, [genAI, studyFilesData]);
+    }, [studyFilesData]);
 
 
     const handleRemoveStudyFile = async id => {
@@ -1079,7 +1079,7 @@ export default function ExamPrepCreator() {
         if (userId) {
             loadPreps();
         }
-    }, [userId]);
+    }, [userId, loadPreps]);
 
     return (
         <div className="flex flex-col min-h-screen h-full  dark:bg-zinc-800 bg-zinc-100">
