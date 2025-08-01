@@ -63,11 +63,34 @@ export default function Home() {
   const [isOpen, setIsOpen] = useAtom(sideBar_state);
   const [uid, setUid] = useAtom(user_id_supabase); // Read uid value directly
   const { getUserActivityUsage, decrementUserActivityUsage } = useUserActivityAPI();
+  const { user, loading } = useAuth();
+  const router = useRouter();
 
   const isMobile = useIsMobile();
   const sidebarRef = useRef(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [user_premium, set_user_premium] = useState(false);
+
+  // Redirect unauthenticated users to landing page
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/landing');
+    }
+  }, [user, loading, router]);
+
+  // Show loading while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-zinc-900">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Don't render anything if user is not authenticated (will redirect)
+  if (!user) {
+    return null;
+  }
 
   const getTimeBasedGreeting = () => {
     const hour = new Date().getHours();
@@ -343,8 +366,7 @@ export default function Home() {
 
 
   return (
-    <ProtectedRoute>
-      <div className={`flex flex-col md:h-[100vh] relative ${(activeTab === "gemini_chat" || activeTab === 'sci_chat' || activeTab === 'exmprep') ? 'h-[100vh]' : 'h-[200vh]'} w-full  ${activeTab === "summary" ? 'bg-zinc-200 dark:bg-zinc-800 h-fit pb-10' : 'dark:bg-zinc-800'} bg-zinc-200 scrollbar-hide`}>
+    <div className={`flex flex-col md:h-[100vh] relative ${(activeTab === "gemini_chat" || activeTab === 'sci_chat' || activeTab === 'exmprep') ? 'h-[100vh]' : 'h-[200vh]'} w-full  ${activeTab === "summary" ? 'bg-zinc-200 dark:bg-zinc-800 h-fit pb-10' : 'dark:bg-zinc-800'} bg-zinc-200 scrollbar-hide`}>
       {activeTab === "note" &&
         <button
           onClick={() => setIsOpen(!isOpen)}
@@ -439,6 +461,5 @@ export default function Home() {
 
       </div >
     </div >
-    </ProtectedRoute>
   );
 }

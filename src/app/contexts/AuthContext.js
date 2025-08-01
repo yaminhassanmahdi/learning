@@ -53,8 +53,8 @@ export const AuthProvider = ({ children }) => {
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setUserProfile(null);
-          // Redirect to login page
-          router.push('/login');
+          // Redirect to landing page
+          router.push('/landing');
         }
       }
     );
