@@ -8,36 +8,19 @@ import {
     useStripe,
     useElements,
 } from '@stripe/react-stripe-js';
-import Stripe from 'stripe';
-import { supabase } from "../lib/supabaseClient"; // Ensure this path is correct
-import { CheckCircle, Shield, Clock, AlertTriangle, ArrowRight, Award, Tag, Loader2, X, Edit3, Bot, Sparkles, SpellCheck } from 'lucide-react'; // Added more icons
+import { supabase } from "../lib/supabaseClient";
+import { CheckCircle, Shield, AlertTriangle, ArrowRight, Award, Tag, Loader2, X, Edit3, Bot, Sparkles, SpellCheck } from 'lucide-react';
 import { useAtomValue } from 'jotai';
-import {
-    // summaryState, // Removed unused imports
-    // chat_id_supabase,
-    // file_id_supabase,
-    // file_contents_supabase,
-    user_id_supabase // Keep used atom
-} from "../../store/uploadAtoms"; // Ensure this path is correct
+import { user_id_supabase } from "../../store/uploadAtoms";
 
 // --- Configuration ---
-
-// Replace with your actual public keys
 const STRIPE_PUBLIC_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
 const stripePromise = loadStripe(STRIPE_PUBLIC_KEY);
 
-// 
-let stripe;
-stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
-if (typeof window === 'undefined') { // Basic check to prevent client-side exposure, but backend is required
-    stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
-}
-
-// Plans configuration - easily extensible via JSON
 const PLANS = [
     {
-        id: 'student_monthly', // Unique identifier for your system and DB
-        productId: 'prod_S3tTtxnYoAvQTq', // Your Stripe Product ID
+        id: 'student_monthly',
+        productId: 'prod_S3tTtxnYoAvQTq',
         name: 'Student Plan',
         description: 'Perfect for students and academic work',
         price: 4.99,
@@ -50,175 +33,46 @@ const PLANS = [
             { name: 'Humanizer Uses', count: 20, icon: 'humanizer' },
             { name: 'Grammar Checks', count: 40, icon: 'grammar' }
         ],
-        popularBadge: true, // Optional: highlight a plan
-        limits: { // Structure matching Supabase columns for easier updates
+        popularBadge: true,
+        limits: {
             quiz_count: 30,
             paraphrase_count: 25,
             ai_check_count: 20,
             humanizer_count: 20,
-            grammer_check_count: 40 // Ensure this matches your Supabase column name exactly
+            grammer_check_count: 40
         }
     }
-    // Add more plans here, e.g.:
-    // { id: 'pro_monthly', productId: 'prod_...', name: 'Pro Plan', ... }
 ];
 
-// Sample coupons - **Ideally, fetch these securely from your backend/database**
-const VALID_COUPONS = {
-    'STUDENT25': { discount: 0.25, type: 'percentage', description: '25% off' },
-    'SPS2025': { discount: 1.00, type: 'percentage', description: '100% off' },
-    'NEWUSER50': { discount: 0.50, type: 'percentage', description: '50% off' },
-    'SAVE2': { discount: 2.00, type: 'fixed', description: '$2.00 off' }
-};
+// --- API Helper Functions ---
 
-// --- Backend Simulation Functions (MUST BE MOVED TO SECURE BACKEND) ---
-
-// Server action for creating payment intent (MUST run server-side)
-async function createPaymentIntent(planId, couponCode = null, userId) {
-    console.log(`SERVER ACTION (SIMULATED): Creating PI for plan ${planId}, coupon ${couponCode}, user ${userId}`);
-    if (!stripe) {
-        throw new Error("Stripe secret key not configured server-side.");
+// Calls the backend to create a payment intent
+async function createPaymentIntent(planId, couponCode, userId) {
+    const response = await fetch('/api/create-payment-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId, couponCode, userId }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Failed to create payment intent');
     }
-
-    // Find selected plan
-    const selectedPlan = PLANS.find(plan => plan.id === planId);
-    if (!selectedPlan) throw new Error('Invalid plan selected');
-
-    // Calculate discount if coupon is valid
-    let finalAmount = selectedPlan.price;
-    let appliedCoupon = null;
-    let isValidCoupon = couponCode && VALID_COUPONS[couponCode];
-
-    if (isValidCoupon) {
-        const couponData = VALID_COUPONS[couponCode];
-        appliedCoupon = {
-            code: couponCode,
-            type: couponData.type,
-            discount: couponData.discount,
-            description: couponData.description
-        };
-
-        if (couponData.type === 'percentage') {
-            finalAmount = finalAmount * (1 - couponData.discount);
-        } else if (couponData.type === 'fixed') {
-            finalAmount = Math.max(0, finalAmount - couponData.discount);
-        }
-    }
-
-    // Ensure we have a minimum amount and round to 2 decimal places
-    finalAmount = Math.round(finalAmount * 100) / 100;
-
-    // For zero-amount payments due to coupon
-    if (finalAmount <= 0 && isValidCoupon) {
-        console.log("SERVER ACTION (SIMULATED): Coupon results in free order.");
-        return {
-            isFreeOrder: true,
-            appliedDiscount: { // Use the structure from appliedCoupon
-                ...appliedCoupon,
-                originalPrice: selectedPlan.price,
-                finalPrice: 0,
-                discountAmount: selectedPlan.price
-            },
-            selectedPlan,
-            clientSecret: null // No PI needed
-        };
-    }
-
-    // For paid amounts, create a payment intent with Stripe
-    finalAmount = Math.max(0.50, finalAmount); // Stripe minimum charge is $0.50 USD
-    console.log(`SERVER ACTION (SIMULATED): Creating Stripe PI for amount ${finalAmount}`);
-
-    try {
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: Math.round(finalAmount * 100), // Amount in cents
-            currency: selectedPlan.currency,
-            automatic_payment_methods: {
-                enabled: true,
-            },
-            metadata: {
-                productId: selectedPlan.productId,
-                planId: selectedPlan.id,
-                userId: userId || 'unknown', // Include user ID if available
-                couponCode: isValidCoupon ? couponCode : 'none'
-            }
-            // Consider adding receipt_email or customer ID if available
-        });
-
-        console.log("SERVER ACTION (SIMULATED): PaymentIntent created successfully.");
-        return {
-            paymentIntent, // Return the full PI object
-            clientSecret: paymentIntent.client_secret,
-            isFreeOrder: false,
-            appliedDiscount: isValidCoupon ? {
-                ...appliedCoupon,
-                originalPrice: selectedPlan.price,
-                finalPrice: finalAmount,
-                discountAmount: selectedPlan.price - finalAmount
-            } : null,
-            selectedPlan
-        };
-    } catch (error) {
-        console.error("SERVER ACTION (SIMULATED): Stripe PaymentIntent creation failed:", error);
-        throw new Error(`Failed to create payment intent: ${error.message}`);
-    }
+    return data;
 }
 
-// Function to update user usage in Supabase (MUST run server-side or use RLS)
-const updateUserUsage = async (userId, selectedPlan, paymentIntentId = null) => {
-    console.log(`SERVER ACTION (SIMULATED): Updating DB for user ${userId}, plan ${selectedPlan.id}, PI: ${paymentIntentId}`);
-    if (!userId) {
-        throw new Error("User ID is required to update usage.");
+// Calls the backend to update user usage in Supabase
+async function updateUserUsage(userId, selectedPlan, paymentIntentId = null) {
+    const response = await fetch('/api/update-user-usage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, selectedPlan, paymentIntentId }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+        throw new Error(data.error || 'Failed to update user usage');
     }
-    if (!selectedPlan || !selectedPlan.limits) {
-        throw new Error("Valid plan details are required to update usage.");
-    }
-
-    try {
-        // First, get current user data
-        const { data: userData, error: fetchError } = await supabase
-            .from('user_usage') // Ensure this table name is correct
-            .select('*')
-            .eq('user_id', userId)
-            .maybeSingle(); // Use maybeSingle to handle users not existing yet
-
-        if (fetchError && fetchError.code !== 'PGRST116') { // Ignore 'PGRST116' (No rows found) for upsert logic
-            console.error("Supabase fetch error:", fetchError);
-            throw new Error(`Failed to fetch user data: ${fetchError.message}`);
-        }
-
-        // Prepare updated data - ADDING to existing counts
-        const dataToUpdate = {
-            user_id: userId, // Include user_id for potential insert
-            is_premium: true,
-            quiz_count: (userData?.quiz_count || 0) + selectedPlan.limits.quiz_count,
-            paraphrase_count: (userData?.paraphrase_count || 0) + selectedPlan.limits.paraphrase_count,
-            ai_check_count: (userData?.ai_check_count || 0) + selectedPlan.limits.ai_check_count,
-            humanizer_count: (userData?.humanizer_count || 0) + selectedPlan.limits.humanizer_count,
-            grammer_check_count: (userData?.grammer_check_count || 0) + selectedPlan.limits.grammer_check_count,
-            // last_reset: userData?.last_reset || new Date().toISOString(), // Decide on reset logic - usually not needed on upgrade
-            subscription_date: new Date().toISOString(),
-            plan_id: selectedPlan.id, // Store the subscribed plan ID
-            last_payment_intent: paymentIntentId // Optional: Track the payment intent
-        };
-
-        // Upsert the data: Update if exists, Insert if not
-        const { error: upsertError } = await supabase
-            .from('user_usage')
-            .upsert(dataToUpdate, { onConflict: 'user_id' }); // Specify the conflict column
-
-        if (upsertError) {
-            console.error("Supabase upsert error:", upsertError);
-            throw new Error(`Failed to update user usage: ${upsertError.message}`);
-        }
-        console.log("SERVER ACTION (SIMULATED): User usage updated successfully in DB.");
-        return { success: true };
-
-    } catch (error) {
-        console.error("Error in updateUserUsage:", error);
-        // Rethrow the error for the calling component to handle
-        throw error;
-    }
-};
+    return data;
+}
 
 // --- UI Components ---
 
@@ -729,9 +583,8 @@ export default function StripePaymentComponent() {
 
             if (data?.is_premium) {
                 setIsPremium(true);
-                // Optionally, find the plan details they are subscribed to
                 const currentPlan = PLANS.find(p => p.id === data.plan_id);
-                setSelectedPlanDetails(currentPlan || PLANS[0]); // Fallback needed
+                setSelectedPlanDetails(currentPlan || PLANS[0]);
                 console.log(`User ${userUuid} is already premium on plan ${data.plan_id || 'unknown'}.`);
             } else {
                 setIsPremium(false);
@@ -739,7 +592,7 @@ export default function StripePaymentComponent() {
         } catch (err) {
             console.error("Error checking premium status:", err);
             setPremiumCheckError(err.message);
-            setIsPremium(false); // Assume not premium if check fails
+            setIsPremium(false);
         } finally {
             setIsLoadingPremiumStatus(false);
         }
