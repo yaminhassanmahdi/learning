@@ -69,6 +69,25 @@ const randRange = (n: number): number => n - rand(2 * n);
     center[1] = 0.5 * canvas.height;
   }, [center]);
 
+  const initParticle = useCallback((i: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    let x, y, vx, vy, life, ttl, speed, radius, hue;
+
+    x = rand(canvas.width);
+    y = center[1] + randRange(rangeY);
+    vx = 0;
+    vy = 0;
+    life = 0;
+    ttl = baseTTL + rand(rangeTTL);
+    speed = baseSpeed + rand(rangeSpeed);
+    radius = baseRadius + rand(rangeRadius);
+    hue = baseHue + rand(rangeHue);
+
+    particlePropsRef.current.set([x, y, vx, vy, life, ttl, speed, radius, hue], i);
+  }, [center, rangeY, baseTTL, rangeTTL, baseSpeed, rangeSpeed, baseRadius, rangeRadius, baseHue, rangeHue]);
+
   const initParticles = useCallback(() => {
     tickRef.current = 0;
     // simplex = new SimplexNoise();
@@ -194,29 +213,6 @@ const randRange = (n: number): number => n - rand(2 * n);
       }
     }
   }, [resize, draw, initParticles]);
-
-  const initParticle = useCallback((i: number) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    let x, y, vx, vy, life, ttl, speed, radius, hue;
-
-    x = rand(canvas.width);
-    y = center[1] + randRange(rangeY);
-    vx = 0;
-    vy = 0;
-    life = 0;
-    ttl = baseTTL + rand(rangeTTL);
-    speed = baseSpeed + rand(rangeSpeed);
-    radius = baseRadius + rand(rangeRadius);
-    hue = baseHue + rand(rangeHue);
-
-    particlePropsRef.current.set([x, y, vx, vy, life, ttl, speed, radius, hue], i);
-  }, [center, rangeY, baseTTL, rangeTTL, baseSpeed, rangeSpeed, baseRadius, rangeRadius, baseHue, rangeHue]);
-
-
-
-
 
   useEffect(() => {
     setup();
